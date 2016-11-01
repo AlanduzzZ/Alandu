@@ -115,7 +115,7 @@ class DamatuApi():
 #1.实例化类型 参数是打码兔用户账号和密码	
 dmt=DamatuApi("xxxx","xxx")
 #2.调用方法：
-print(dmt.getBalance()) #查询余额 
+#print(dmt.getBalance()) #查询余额
 #print(dmt.decode('0349.bmp',200)) #上传打码
 #print(dmt.decodeUrl('http://captcha.qq.com/getimage?aid=549000912&r=0.7257105156128585&uin=3056517021',200)) #上传打码
 #print(dmt.reportError('894657096')) #上报错误
