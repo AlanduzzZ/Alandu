@@ -113,7 +113,7 @@ class DamatuApi():
 		
 #调用类型实例：
 #1.实例化类型 参数是打码兔用户账号和密码	
-dmt=DamatuApi("alandu","du19940421")
+dmt=DamatuApi("xxxx","xxx")
 #2.调用方法：
 print(dmt.getBalance()) #查询余额 
 #print(dmt.decode('0349.bmp',200)) #上传打码

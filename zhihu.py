@@ -18,8 +18,8 @@ header = {
 }
 
 #账号密码
-emailaddr = r'dovequn@gmail.com'
-passwd = r'1WOYONGYUANAINI.'
+emailaddr = r'xxx@gmail.com'
+passwd = r'xxxx'
 
 
 #打开一个session
