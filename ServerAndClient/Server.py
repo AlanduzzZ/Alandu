@@ -7,9 +7,9 @@ from socketserver import ThreadingTCPServer
 
 class MyServer(StreamRequestHandler):
     def handle(self):
-#        allow_reuse_address = True
         while True:
             try:
+                print('Client (%s) 已连接......' % self.client_address)
                 reqdata = self.rfile.readline().strip().decode()
                 print('Client IP is: %s ,data is %s, type is %s' % (self.client_address, reqdata, type(reqdata)))
 #                senddata = 'Your data is',reqdata
@@ -24,6 +24,8 @@ class MyServer(StreamRequestHandler):
             except Exception:
                 traceback.print_exc()
                 break
+            else:
+                print
 
 class MyThreadingTCPServer(ThreadingTCPServer):
     allow_reuse_address = True
