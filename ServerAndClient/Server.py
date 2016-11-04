@@ -7,25 +7,24 @@ from socketserver import ThreadingTCPServer
 
 class MyServer(StreamRequestHandler):
     def handle(self):
-        while True:
+        isTrue = True
+        while isTrue:
             try:
-                print('Client (%s) 已连接......' % self.client_address)
-                reqdata = self.rfile.readline().strip().decode()
-                print('Client IP is: %s ,data is %s, type is %s' % (self.client_address, reqdata, type(reqdata)))
-#                senddata = 'Your data is',reqdata
-                senddata = reqdata.upper() +  '\r\n'
+                print(r'Client %s 已连接......' % self.client_address[0])
+                reqdata = self.rfile.readline().decode().strip()
+                print(r'Client IP is: %s ,data is %s, type is %s' % (self.client_address, reqdata, type(reqdata)))
+                senddata = reqdata.upper() + '\r\n'
                 self.wfile.write(senddata.encode())
             except ConnectionAbortedError:
-                print('ConnectionAbortedError: Client %s 已经关闭连接' % self.client_address[0])
-                break
+                print(r'ConnectionAbortedError: Client %s 已经关闭连接' % self.client_address[0])
             except ConnectionResetError:
-                print('ConnectionResetError: Client %s 强制关闭连接' % self.client_address[0])
-                break
+                print(r'ConnectionResetError: Client %s 强制关闭连接' % self.client_address[0])
             except Exception:
                 traceback.print_exc()
-                break
-            else:
-                print
+                print(r'Client %s 已关闭连接!' % self.client_address[0])
+            finally:
+                print(r'Client %s 已关闭连接!' % self.client_address[0])
+                isTrue = False
 
 class MyThreadingTCPServer(ThreadingTCPServer):
     allow_reuse_address = True
