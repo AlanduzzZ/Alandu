@@ -48,7 +48,7 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
     def sigterm_handler(signo, frame):
         raise SystemExit(1)
     #自定义进程信号接收器
-    signal.signal(signal.SIGTERM, sigterm_handler())
+    signal.signal(signal.SIGTERM, sigterm_handler)
 #到这里，守护进程如何启动已经定义完毕，接下来定义主函数
 
 #主函数先写一个示例，每10秒写一句话到stdout中
