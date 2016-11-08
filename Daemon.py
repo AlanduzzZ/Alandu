@@ -6,6 +6,8 @@ import sys
 import atexit
 import signal
 import time
+from ServerAndClient.Server import MyServer
+from ServerAndClient.Server import MyThreadingTCPServer
 
 def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     #检查当前进程是否已经存在，保证唯一性
@@ -65,16 +67,18 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
 #到这里，守护进程如何启动已经定义完毕，接下来定义主函数
 
 #主函数先写一个示例，每10秒写一句话到stdout中
-def main():
+def main(host, port):
     sys.stdout.write('Daemon started with pid {},{}\n'.format(os.getpid(), time.ctime()))
-    while True:
-        sys.stdout.write('Daemon Alive! {}\n'.format(time.ctime()))
-        sys.stdout.flush()
-        time.sleep(3)
+    addr = (host, port)
+    server = MyThreadingTCPServer(addr, MyServer)
+    server.serve_forever()
     sys.stdout.flush()
 #现在主函数写完了，接下来写这个守护进程的调用方法
 
 if __name__ == '__main__':
+    # 配置主函数需要的参数
+    host = '0.0.0.0'
+    port = 20001
     #定义PID文件位置，也可以由外
     PIDFILE = r'/tmp/daemon.pid'
     STDOUT = r'/tmp/daemon.log'
@@ -89,7 +93,7 @@ if __name__ == '__main__':
         except RuntimeError as e:
             print(e, file=sys.stderr)
             raise SystemExit(1)
-        main()                          #执行主函数
+        main(host, port)                          #执行主函数
     elif sys.argv[1] == r'stop':      #如果参数为stop，则向守护进程发送终止信号
         if os.path.exists(PIDFILE):
             with open(PIDFILE) as f:
