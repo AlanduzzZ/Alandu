@@ -26,7 +26,7 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
     try:
         if os.fork() > 0:               #判断当前是否为子进程，身份是父进程（第一次创建的子进程）
             raise SystemExit()          #如果是子进程，结束父进程，第二个子进程开始运行
-    except Exception as e:
+    except OSError as e:
         raise RuntimeError(r'Fork #2 failed !')
     #将所有的标准输出和错误输出都立刻输出到目的地
     sys.stdout.flush()
