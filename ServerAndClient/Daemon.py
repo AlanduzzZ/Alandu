@@ -5,11 +5,20 @@ import os
 import sys
 import atexit
 import signal
+import time
 
 def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     #检查当前进程是否已经存在，保证唯一性
     if os.path.exists(pidfile):
         raise RuntimeError(r'Monitor is already running !')
+    # 判断文件路径是否存在，如果不存在则创建这些目录
+    def dir_exists(dirpath):
+        if os.path.exists(r'%s' % dirpath):
+            return 'dir is exists'
+        else:
+            os.makedirs(r'%s' % dirpath)
+            return 'mkdir successful'
+    map(dir_exists, [pidfile, stdout, stdin])
     #第一次结束当前父进程，创建第一个子进程
     #fork()函数：如果父进程调用，则返回子进程PID，PID肯定大于0；如果子进程调用，那么返回0
     try:
@@ -42,8 +51,12 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
     #当前进程为第二个子进程，也是最终需要作为守护进程的进程，需要将PID写入文件，以便调用
     with open(pidfile, 'w') as f:
         print(os.getpid(), file=f)
+    def stopit():
+        os.remove(pidfile)              #清理PID文件
+        sys.stdout.write('Daemon stoped with pid {},{}\n'.format(os.getpid(), time.ctime()))        #记录stop时间到日志
+        sys.stdout.flush()              #刷新日志文件
     #注册一个回调函数，当程序非正常退出或者os.exit()退出，则不会执行回调函数，并且回调函数的注册顺序（A,B,C）和执行顺序（C,B,A）是相反的
-    atexit.register(lambda: os.remove(pidfile))             #清理PID文件
+    atexit.register(lambda: stopit())             #调用stop时的清理操作
     #定义一个进程收到终止信号的时候的操作
     def sigterm_handler(signo, frame):
         raise SystemExit(1)
@@ -53,11 +66,12 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
 
 #主函数先写一个示例，每10秒写一句话到stdout中
 def main():
-    import time
-    sys.stdout.write(r'Daemon started with pid {}\n'.format(os.getpid()))
+    sys.stdout.write('Daemon started with pid {},{}\n'.format(os.getpid(), time.ctime()))
     while True:
-        sys.stdout.write(r'Daemon Alive! {}\n'.format(time.ctime()))
-        time.sleep(10)
+        sys.stdout.write('Daemon Alive! {}\n'.format(time.ctime()))
+        sys.stdout.flush()
+        time.sleep(3)
+    sys.stdout.flush()
 #现在主函数写完了，接下来写这个守护进程的调用方法
 
 if __name__ == '__main__':
@@ -65,14 +79,6 @@ if __name__ == '__main__':
     PIDFILE = r'/tmp/daemon.pid'
     STDOUT = r'/tmp/daemon.log'
     STDERR = r'/tmp/daemon.log'
-    # 判断文件路径是否存在，如果不存在则创建这些目录
-    def dir_exists(dirpath):
-        if os.path.exists(r'%s' % dirpath):
-            return 'dir is exists'
-        else:
-            os.makedirs(r'%s' % dirpath)
-            return 'mkdir successful'
-    map(dir_exists, [PIDFILE, STDOUT, STDERR])
     #定义接收参数的判断，sys.argv()函数是获取程序执行时的参数，第一个参数是程序本身的名字
     if len(sys.argv) != 2:              #如果参数个数不等于2，也就是程序执行时程序只能有一个参数
         print('Usage: {} [start|stop]'.format(sys.argv[0]), file=sys.stderr)
