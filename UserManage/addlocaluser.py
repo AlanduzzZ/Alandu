@@ -1,14 +1,14 @@
-#!/usr/bin/python3.5
+#!/usr/bin/python3.4
 #-*- coding:utf-8 -*-
 
 from subprocess import call
 import os
 import functools
 import pexpect
+from iflocaluser import Userinfo
+import sys
 
-username = r'abc'
 password = r'123'
-userauthorizedkeys = r'%s.pub'% username
 call_shell = functools.partial(call, shell=True, stdin=None, stdout=None, stderr=None)
 
 def dir_exists(dirpath):
@@ -56,7 +56,22 @@ def adduser(username,password):
         print('backupkey successful !')
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: {} username'.format(sys.argv[0]) )
+        sys.exit(1)
+    userauthorizedkeys = r'{}.pub'.format(sys.argv[1])
+    userinfo = Userinfo(sys.argv[1])
+    ifuser = userinfo.getUserinfo()['user_exists']
+    if ifuser is not None:
+        if ifuser == r'Yse':
+            print('User {} is exists !'.format(sys.argv[1]))
+            raise SystemExit(1)
+        elif ifuser == r'No':
+            pass
+    else:
+        print('Get Userinfo Error !')
+        raise SystemExit(1)
     try:
-        adduser(username, password)
+        adduser(sys.argv[1], password)
     except Exception as e:
         print(e)
