@@ -1,15 +1,14 @@
 #!/usr/bin/python3.4
 #-*- coding:utf-8 -*-
 
-from subprocess import call
+from subprocess import check_output
 import os
 import functools
 import pexpect
 from iflocaluser import Userinfo
 import sys
 
-password = r'123'
-call_shell = functools.partial(call, shell=True, stdin=None, stdout=None, stderr=None)
+check_output_shell = functools.partial(check_output, shell=True, stdin=None, stderr=None)
 
 def dir_exists(dirpath):
     if os.path.exists(r'%s' % dirpath):
@@ -18,12 +17,12 @@ def dir_exists(dirpath):
         os.makedirs(r'%s' % dirpath)
         return 'mkdir successful'
 
-def adduser(username,password):
+def adduser(username, password=r''):
     try:
-        call_shell(r'chattr -i /etc/passwd /etc/group /etc/shadow /etc/sudoers /etc/profile')
         map(dir_exists, [r'/data/home', r'/data/backup/authorized_keys_bak'])
-        call_shell(r'useradd %s' % username)
-        call_shell(r'echo %s | passwd --stdin %s' % (password, username))
+        check_output_shell(r'useradd %s' % username)
+        if sys.argv[1] != 'admin':
+            check_output_shell(r'echo %s | passwd --stdin %s' % (password, username))
         try:
             ssh = pexpect.spawn('/usr/bin/su %s -c ssh-keygen' % username, timeout=5)
             ssh.expect(r'which to save the key')
@@ -36,42 +35,90 @@ def adduser(username,password):
             ssh.logfile = sshlogfile
             ssh.expect(pexpect.EOF)
         except Exception as e:
-            print(e)
-            pass
-    except Exception as addusererror:
-        print(addusererror)
+            raise SystemExit(e)
+    except Exception as e:
+        raise SystemExit(e)
     else:
         print('adduser successful !')
-    with open(r'/data/home/%s/.bash_profile' % username, 'a') as f:
-        f.write('\nif [ "$PS1" ];then\n  . /usr/local/pateo/slogin.sh\nfi')
+        if sys.argv[1] != 'admin':
+            with open(r'/data/home/{}/.bash_profile'.format(username), 'a') as f:
+                f.write('\nif [ "$PS1" ];then\n  . /usr/local/pateo/slogin.sh\nfi')
+        try:
+            if os.path.exists(r'/data/backup/authorized_keys_bak/{}'.format(userauthorizedkeys)):
+                check_output_shell(r'mv /data/backup/authorized_keys_bak/{} /data/backup/authorized_keys_bak/{}.bak'.format(userauthorizedkeys, userauthorizedkeys))
+            check_output_shell(r'mv /data/home/{}/.ssh/id_rsa.pub /data/home/{}/.ssh/authorized_keys'.format(username, username))
+            check_output_shell(r'cp /data/home/{}/.ssh/authorized_keys /data/backup/authorized_keys_bak/{}'.format(username, userauthorizedkeys))
+        except Exception as e:
+            raise SystemExit(e)
+        else:
+            print('backupkey successful !')
+
+def addsudo(username):
+    usersudo = '{}\t\tALL=(ALL)\tNOPASSWD: ALL'.format(username)
+    fromfile = r''
     try:
-        if os.path.exists(r'/data/backup/authorized_keys_bak/%s' % userauthorizedkeys):
-            call_shell(r'mv /data/backup/authorized_keys_bak/%s /data/backup/authorized_keys_bak/%s.bak' % (userauthorizedkeys, userauthorizedkeys))
-        call_shell(r'mv /data/home/%s/.ssh/id_rsa.pub /data/home/%s/.ssh/%s' % (username, username, userauthorizedkeys))
-        call_shell(r'cp /data/home/%s/.ssh/%s /data/backup/authorized_keys_bak/' % (username, userauthorizedkeys))
-        call_shell(r'chattr +i /etc/passwd /etc/group /etc/shadow /etc/sudoers /etc/profile')
-    except Exception as backupkeyerror:
-        print(backupkeyerror)
+        fromfile = check_output_shell('grep -w "{}" /etc/sudoers'.format(username)).decode().strip()
+    except Exception as e:
+        pass
+    if fromfile == usersudo:
+        pass
     else:
-        print('backupkey successful !')
+        try:
+            check_output_shell('echo "{}\t\tALL=(ALL)\tNOPASSWD: ALL" >> /etc/sudoers'.format(username))
+        except Exception as e:
+            raise SystemExit(e)
+
+def chattr_lock(lock):
+    if lock == 'lock':
+        try:
+            check_output_shell(r'chattr +i /etc/passwd /etc/group /etc/shadow /etc/sudoers /etc/profile')
+        except Exception as e:
+            raise SystemExit(e)
+    elif lock == 'unlock':
+        try:
+            check_output_shell(r'chattr -i /etc/passwd /etc/group /etc/shadow /etc/sudoers /etc/profile')
+        except Exception as e:
+            raise SystemExit(e)
+    else:
+        raise SystemExit(1)
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print('Usage: {} username'.format(sys.argv[0]) )
-        sys.exit(1)
-    userauthorizedkeys = r'{}.pub'.format(sys.argv[1])
-    userinfo = Userinfo(sys.argv[1])
+    if 3 <= len(sys.argv) <= 4:
+        if sys.argv[1] == 'admin' and len(sys.argv) == 3:
+            pass
+        else:
+            if sys.argv[1] == 'devel' and len(sys.argv) == 4:
+                pass
+            else:
+                raise SystemExit('Usage: {} [admin|devel] username (passwd) passwd为添加devel账号必选参数'.format(sys.argv[0]))
+    else:
+        raise SystemExit('Usage: {} [admin|devel] username (passwd) passwd为添加devel账号必选参数'.format(sys.argv[0]))
+    userauthorizedkeys = r'{}.pub'.format(sys.argv[2])
+    userinfo = Userinfo(sys.argv[2])
     ifuser = userinfo.getUserinfo()['user_exists']
     if ifuser is not None:
-        if ifuser == r'Yse':
-            print('User {} is exists !'.format(sys.argv[1]))
-            raise SystemExit(1)
+        if ifuser == r'Yes':
+            raise SystemExit('User {} is exists !'.format(sys.argv[2]))
         elif ifuser == r'No':
             pass
     else:
-        print('Get Userinfo Error !')
-        raise SystemExit(1)
-    try:
-        adduser(sys.argv[1], password)
-    except Exception as e:
-        print(e)
+        raise SystemExit('Get Userinfo Error !')
+    if sys.argv[1] == 'admin':
+        try:
+            chattr_lock('unlock')
+            adduser(sys.argv[2])
+            addsudo(sys.argv[2])
+        except Exception as e:
+            raise SystemExit(e)
+        finally:
+            chattr_lock('lock')
+    elif sys.argv[1] == 'devel':
+        try:
+            chattr_lock('unlock')
+            adduser(sys.argv[2], sys.argv[3])
+        except Exception as e:
+            raise SystemExit(e)
+        finally:
+            chattr_lock('lock')
+    else:
+        raise SystemExit('The parameter you entered is incorrect !')
