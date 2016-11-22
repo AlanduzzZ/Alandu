@@ -47,4 +47,4 @@ class Userinfo(object):
         return userdata
 
     def print_user(self):
-        print(self.username)
+        print(self.__username)

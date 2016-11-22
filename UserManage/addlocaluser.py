@@ -10,6 +10,7 @@ import sys
 
 check_output_shell = functools.partial(check_output, shell=True, stdin=None, stderr=None)
 
+
 def dir_exists(dirpath):
     if os.path.exists(r'%s' % dirpath):
         return 'dir is exists'
@@ -19,8 +20,8 @@ def dir_exists(dirpath):
 
 def adduser(username, password=r''):
     try:
-        map(dir_exists, [r'/data/home', r'/data/backup/authorized_keys_bak'])
-        check_output_shell(r'useradd %s' % username)
+        mkdir = list(map(dir_exists, [r'/data/home', r'/data/backup/authorized_keys_bak']))
+        check_output_shell(r'useradd -d /data/home/%s %s' % (username, username))
         if sys.argv[1] != 'admin':
             check_output_shell(r'echo %s | passwd --stdin %s' % (password, username))
         try:
@@ -65,6 +66,7 @@ def addsudo(username):
     else:
         try:
             check_output_shell('echo "{}\t\tALL=(ALL)\tNOPASSWD: ALL" >> /etc/sudoers'.format(username))
+            return 'add sudo sucessful'
         except Exception as e:
             raise SystemExit(e)
 
