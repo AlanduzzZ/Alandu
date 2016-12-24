@@ -19,7 +19,7 @@ def SocketClient(data):
     else:
         if not data:
             raise SystemExit('The data is Empty')
-        senddata = '%s\r\n' % data
+        senddata = '{}\r\n'.format(data)
         try:
             Client.sendall(senddata.encode())
             respdata = Client.recv(1024)
