@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/local/python3/bin/python3.5
 #-*- coding:utf-8 -*-
 
 import os
@@ -80,9 +80,9 @@ if __name__ == '__main__':
     host = '0.0.0.0'
     port = 20001
     #定义PID文件位置，也可以由外
-    PIDFILE = r'/tmp/daemon.pid'
-    STDOUT = r'/tmp/daemon.log'
-    STDERR = r'/tmp/daemon.log'
+    PIDFILE = r'/var/log/daemon.pid'
+    STDOUT = r'/var/log/daemon.log'
+    STDERR = r'/var/log/daemon.log'
     #定义接收参数的判断，sys.argv()函数是获取程序执行时的参数，第一个参数是程序本身的名字
     if len(sys.argv) != 2:              #如果参数个数不等于2，也就是程序执行时程序只能有一个参数
         print('Usage: {} [start|stop]'.format(sys.argv[0]), file=sys.stderr)

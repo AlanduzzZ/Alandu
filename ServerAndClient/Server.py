@@ -1,46 +1,51 @@
-#!/usr/bin/python3.4
+#!/usr/local/python3/bin/python3.5
 #-*- coding:utf-8 -*-
 
 import traceback
 from socketserver import StreamRequestHandler
 from socketserver import ThreadingTCPServer
 import sys
+from UserManage.addUser import *
+import json
+import Mylogger
+
 
 class MyServer(StreamRequestHandler):
+
     def handle(self):
         isTrue = True
         while isTrue:
             try:
-                sys.stdout.write('Client %s 已连接......\n' % self.client_address[0])
-                sys.stdout.flush()
+                Mylogger.UserManagelog.info('Client %s 已连接......\n' % self.client_address[0])
                 reqdata = self.rfile.readline().decode().strip()
-                reqdata = eval(reqdata)
-                sys.stdout.write('Client IP is: %s ,data is %s, type is %s\n' % (self.client_address, reqdata, type(reqdata)))
-                if reqdata['tag'] in ['getuserinfo', 'addremoteuser']:
-                    if reqdata['tag'] == 'getuserinfo':
-                        from iflocaluser import Userinfo
-                        senddata = Userinfo(reqdata['username']).getUserinfo()['user_exists']
-                    elif reqdata['tag'] == 'addremoteuser':
-                        from adddeveluser import addlocaluser
-                        with open('/user/local/pateo/key', 'w') as f:
-                            f.write(reqdata['key'])
-                        senddata = addlocaluser(reqdata['username'], reqdata['sudo'], reqdata['key'])
+                reqdata = json.loads(reqdata)
+                Mylogger.UserManagelog.info('Client IP is: %s ,data is %s, type is %s\n' % (self.client_address, reqdata, type(reqdata)))
+                if reqdata['tag'] in ['getUserInfo', 'addRemoteUser']:
+                    if reqdata['tag'] == 'getUserInfo':
+                        senddata = UserToolsApp.getUserinfo(reqdata['username'])
+                    elif reqdata['tag'] == 'addRemoteUser':
+                        __RLocaluseradd = RLocaluseradd(reqdata['username'], reqdata['sudo'], reqdata['key'])
+                        senddata = __RLocaluseradd.userAdd()
                     else:
                         senddata = ''
                 else:
+                    Mylogger.UserManagelog.critical('The tag is Error')
                     raise SystemExit('The tag is Error')
-                senddata = senddata + '\r\n'
-                self.wfile.write(senddata.encode())
+                senddata_json = json.dumps(senddata) + '\r\n'
+                self.wfile.write(senddata_json.encode())
+                Mylogger.UserManagelog.debug(senddata_json)
             except ConnectionAbortedError:
-                sys.stdout.write('ConnectionAbortedError: Client %s 已经关闭连接\n' % self.client_address[0])
+                Mylogger.UserManagelog.critical('ConnectionAbortedError: Client %s 异常关闭连接\n' % self.client_address[0])
+                raise 'ConnectionAbortedError: Client %s 异常关闭连接\n' % self.client_address[0]
             except ConnectionResetError:
-                sys.stdout.write('ConnectionResetError: Client %s 强制关闭连接\n' % self.client_address[0])
+                Mylogger.UserManagelog.critical('ConnectionResetError: Client %s 强制关闭连接\n' % self.client_address[0])
+                raise 'ConnectionResetError: Client %s 强制关闭连接\n' % self.client_address[0]
             except Exception:
-                traceback.print_exc()
-                sys.stdout.write('Client %s 已关闭连接!\n' % self.client_address[0])
+                Mylogger.UserManagelog.critical(traceback.print_exc())
+                Mylogger.UserManagelog.critical('Client %s 异常关闭连接!\n' % self.client_address[0])
+                raise 'Client %s 异常闭连接!\n' % self.client_address[0]
             finally:
-                sys.stdout.write('Client %s 已关闭连接!\n' % self.client_address[0])
-                sys.stdout.flush()
+                Mylogger.UserManagelog.info('Client %s 已关闭连接!\n' % self.client_address[0])
                 isTrue = False
 
 class MyThreadingTCPServer(ThreadingTCPServer):
